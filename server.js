@@ -89,9 +89,9 @@ app.post('/check-verified', async (req, res) => {
     res.json({ verified: record?.verified || false })
 })
 
-// --------------------
+
 // --- Serve Vue frontend for all other routes ---
-// --------------------
+
 app.use(express.static(path.join(__dirname, 'frontend', 'dist')))
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'))
@@ -99,7 +99,7 @@ app.get('*', (req, res) => {
 
 // --------------------
 // --- Connect MongoDB ---
-// --------------------
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB error:', err))
