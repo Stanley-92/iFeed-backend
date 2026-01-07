@@ -23,7 +23,7 @@ app.use(cors({
 
 app.use(express.json())  // Move this down
 
-// ... rest of your code stays EXACTLY th
+
 
 // Debug
 console.log('MONGO_URI =', process.env.MONGO_URI.replace(/:([^@]*)/, ':***')) // Hide password
