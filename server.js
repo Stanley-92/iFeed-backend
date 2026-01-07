@@ -1,56 +1,35 @@
+// server.js
 require('dotenv').config()
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const nodemailer = require('nodemailer')
-const Verification = require('./models/Verification')
+const path = require('path')
+const Verification = require('./models/Verification')  // Your Mongoose model
 
 const app = express()
-app.use(cors())
-app.use(express.json())
 
-
-
-// INSERT CORS HERE (after app = express(), before app.use(express.json()))
+// --- CORS setup ---
 app.use(cors({
     origin: [
-        'https://i-feed-frontend.vercel.app',  // ← Your LIVE frontend
-        'http://localhost:5173',               // ← Vite dev server
-        'http://localhost:3000'                // ← Local backend
+        'https://i-feed-frontend.vercel.app', // Your live frontend
+        'http://localhost:5173',               // Vite dev server
+        'http://localhost:3000'                // Local backend
     ],
     credentials: true
 }));
 
-app.use(express.json())  // Move this down
+// Parse JSON requests
+app.use(express.json())
 
-// ... rest of your code stays EXACTLY th
-
-// Debug
-console.log('MONGO_URI =', process.env.MONGO_URI.replace(/:([^@]*)/, ':***')) // Hide password
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log(' MongoDB connected'))
-    .catch(err => console.error(' Mongo error:', err))
-
-// Nodemailer transporter (Gmail)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER, // your Gmail
-        pass: process.env.EMAIL_PASS  // Gmail App Password
-    }
-})
-
-// Generate 6-digit code
-function generateCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString()
-}
+// --------------------
+// --- API ROUTES ---
+// --------------------
 
 // Send verification code
 app.post('/send-code', async (req, res) => {
     const { email } = req.body
-    const code = generateCode()
+    const code = Math.floor(100000 + Math.random() * 900000).toString() // 6-digit code
 
     try {
         // Save or update in MongoDB
@@ -61,14 +40,20 @@ app.post('/send-code', async (req, res) => {
         )
 
         // Send email
-        const mailOptions = {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        })
+
+        await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: email,
             subject: 'Your iFeed Verification Code',
             text: `Your verification code is: ${code}. It expires in 5 minutes.`
-        }
-
-        await transporter.sendMail(mailOptions)
+        })
 
         res.json({ success: true, message: 'Verification code sent via email.' })
     } catch (err) {
@@ -97,16 +82,30 @@ app.post('/verify-code', async (req, res) => {
     }
 })
 
-// Check verified (for login)
+// Check verified status
 app.post('/check-verified', async (req, res) => {
     const { email } = req.body
     const record = await Verification.findOne({ email })
     res.json({ verified: record?.verified || false })
 })
 
-// Start server
-const PORT = process.env.PORT || 3000;
+// --------------------
+// --- Serve Vue frontend for all other routes ---
+// --------------------
+app.use(express.static(path.join(__dirname, 'frontend', 'dist')))
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'))
+})
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// --------------------
+// --- Connect MongoDB ---
+// --------------------
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB error:', err))
+
+// --------------------
+// --- Start server ---
+// --------------------
+const PORT = process.env.PORT || 3000
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
