@@ -8,7 +8,7 @@ const Verification = require('./models/Verification');
 
 const app = express();
 
-// ================= CORS =================
+
 app.use(
     cors({
         origin: [
@@ -21,7 +21,7 @@ app.use(
 
 app.use(express.json());
 
-// ================= MongoDB =================
+
 if (!process.env.MONGO_URI) {
     console.error('MONGO_URI not defined');
     process.exit(1);
@@ -37,7 +37,7 @@ mongoose
         process.exit(1);
     });
 
-// ================= Nodemailer =================
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -50,7 +50,7 @@ function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// ================= API ROUTES =================
+
 
 app.post('/send-code', async (req, res) => {
     const { email } = req.body;
@@ -140,17 +140,10 @@ app.post('/check-verified', async (req, res) => {
     }
 });
 
-// ================= SERVE FRONTEND =================
 
-// Serve Vue build files
-app.use(express.static(path.join(__dirname, '../dist')));
 
-// Catch all routes and send index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
 
-// ================= START SERVER =================
+
 
 const PORT = process.env.PORT || 3000;
 
